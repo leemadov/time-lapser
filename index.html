@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Capture and Download</title>
     <style>
-        body { text-align: center; }
-        video { width: 100%; max-width: 500px; }
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video { width: 100%; max-width: 100%; height: auto; }
         canvas { display: none; }
         .button { margin: 10px; padding: 10px 20px; font-size: 16px; }
     </style>
@@ -31,8 +31,18 @@
         let captureInterval;
         const images = [];
 
-        // Access the camera
-        navigator.mediaDevices.getUserMedia({ video: true })
+        // Access the back camera
+        navigator.mediaDevices.enumerateDevices()
+            .then(devices => {
+                const backCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
+                if (backCamera) {
+                    return navigator.mediaDevices.getUserMedia({
+                        video: { deviceId: backCamera.deviceId }
+                    });
+                } else {
+                    return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                }
+            })
             .then(stream => {
                 video.srcObject = stream;
             })
