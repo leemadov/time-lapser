@@ -9,12 +9,14 @@
         video { width: 100%; max-width: 100%; height: auto; }
         canvas { display: none; }
         .button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+        #debug { color: red; }
     </style>
 </head>
 <body>
     <h1>Photo Capture and Download</h1>
     <video id="video" autoplay></video>
     <canvas id="canvas"></canvas>
+    <div id="debug"></div>
     <br>
     <button id="startBtn" class="button">Start</button>
     <button id="stopBtn" class="button" disabled>Stop</button>
@@ -27,33 +29,53 @@
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const downloadBtn = document.getElementById('downloadBtn');
+        const debug = document.getElementById('debug');
 
         let captureInterval;
         const images = [];
 
+        // Function to log debug messages
+        function logDebug(message) {
+            debug.textContent = message;
+        }
+
         // Access the camera
         async function setupCamera() {
             try {
-                // Get video devices
+                // Check for available devices
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const backCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
-
+                
+                logDebug(backCamera ? `Using camera: ${backCamera.label}` : 'Using default camera');
+                
                 // Access camera
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: { deviceId: backCamera ? backCamera.deviceId : undefined }
                 });
+
                 video.srcObject = stream;
 
                 // Wait for video metadata to load
                 await new Promise(resolve => video.onloadedmetadata = resolve);
 
+                // Check if video stream is active
+                if (!stream.active) {
+                    throw new Error('Camera stream is not active');
+                }
+
             } catch (err) {
+                logDebug(`Error accessing camera: ${err.message}`);
                 console.error("Error accessing camera: ", err);
             }
         }
 
         // Function to capture and save image
         function captureImage() {
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                logDebug('Video feed not ready');
+                return;
+            }
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             context.drawImage(video, 0, 0);
