@@ -31,24 +31,26 @@
         let captureInterval;
         const images = [];
 
-        // Access the back camera
-        navigator.mediaDevices.enumerateDevices()
-            .then(devices => {
+        // Access the camera
+        async function setupCamera() {
+            try {
+                // Get video devices
+                const devices = await navigator.mediaDevices.enumerateDevices();
                 const backCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
-                if (backCamera) {
-                    return navigator.mediaDevices.getUserMedia({
-                        video: { deviceId: backCamera.deviceId }
-                    });
-                } else {
-                    return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                }
-            })
-            .then(stream => {
+
+                // Access camera
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: backCamera ? backCamera.deviceId : undefined }
+                });
                 video.srcObject = stream;
-            })
-            .catch(err => {
+
+                // Wait for video metadata to load
+                await new Promise(resolve => video.onloadedmetadata = resolve);
+
+            } catch (err) {
                 console.error("Error accessing camera: ", err);
-            });
+            }
+        }
 
         // Function to capture and save image
         function captureImage() {
@@ -62,10 +64,12 @@
 
         // Start capturing photos
         startBtn.addEventListener('click', () => {
-            captureInterval = setInterval(captureImage, 60000);
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            downloadBtn.disabled = true;
+            setupCamera().then(() => {
+                captureInterval = setInterval(captureImage, 60000);
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                downloadBtn.disabled = true;
+            });
         });
 
         // Stop capturing photos
