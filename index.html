@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Capture and Download</title>
+    <style>
+        body { text-align: center; }
+        video { width: 100%; max-width: 500px; }
+        canvas { display: none; }
+        .button { margin: 10px; padding: 10px 20px; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <h1>Photo Capture and Download</h1>
+    <video id="video" autoplay></video>
+    <canvas id="canvas"></canvas>
+    <br>
+    <button id="startBtn" class="button">Start</button>
+    <button id="stopBtn" class="button" disabled>Stop</button>
+    <button id="downloadBtn" class="button" disabled>Download ZIP</button>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let captureInterval;
+        const images = [];
+
+        // Access the camera
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error("Error accessing camera: ", err);
+            });
+
+        // Function to capture and save image
+        function captureImage() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            canvas.toBlob(blob => {
+                images.push(blob);
+            }, 'image/jpeg');
+        }
+
+        // Start capturing photos
+        startBtn.addEventListener('click', () => {
+            captureInterval = setInterval(captureImage, 60000);
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            downloadBtn.disabled = true;
+        });
+
+        // Stop capturing photos
+        stopBtn.addEventListener('click', () => {
+            clearInterval(captureInterval);
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            downloadBtn.disabled = false;
+        });
+
+        // Download all images as a ZIP file
+        downloadBtn.addEventListener('click', () => {
+            const zip = new JSZip();
+            images.forEach((blob, index) => {
+                zip.file(`photo_${Date.now() + index}.jpg`, blob);
+            });
+            zip.generateAsync({ type: 'blob' })
+                .then(content => {
+                    const url = URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'photos.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url); // Clean up
+                });
+        });
+    </script>
+</body>
+</html>
