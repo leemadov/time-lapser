@@ -52,7 +52,7 @@
 
         // Start capturing photos
         startBtn.addEventListener('click', () => {
-            captureInterval = setInterval(captureImage, 60000);
+            captureInterval = setInterval(captureImage, 30000); // Capture every 30 seconds
             startBtn.disabled = true;
             stopBtn.disabled = false;
             downloadBtn.disabled = true;
